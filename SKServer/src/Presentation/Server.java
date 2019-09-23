@@ -45,18 +45,8 @@ public class Server extends javax.swing.JFrame {
         btnStart.setBorder(javax.swing.BorderFactory.createBevelBorder(javax.swing.border.BevelBorder.RAISED));
         btnStart.setBorderPainted(false);
 
-        lstDanhSach.setModel(new javax.swing.AbstractListModel<String>() {
-            String[] strings = { "Item 1", "Item 2", "Item 3", "Item 4", "Item 5" };
-            public int getSize() { return strings.length; }
-            public String getElementAt(int i) { return strings[i]; }
-        });
         jScrollPane1.setViewportView(lstDanhSach);
 
-        lstDanhSachFileTuFileServer.setModel(new javax.swing.AbstractListModel<String>() {
-            String[] strings = { "Item 1", "Item 2", "Item 3", "Item 4", "Item 5" };
-            public int getSize() { return strings.length; }
-            public String getElementAt(int i) { return strings[i]; }
-        });
         jScrollPane2.setViewportView(lstDanhSachFileTuFileServer);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());

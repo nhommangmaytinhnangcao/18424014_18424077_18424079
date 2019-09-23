@@ -6,6 +6,11 @@
 package skclient;
 
 import Presentation.Client;
+import java.io.FileInputStream;
+import java.util.jar.Attributes;
+import java.util.jar.JarEntry;
+import java.util.jar.JarInputStream;
+import java.util.jar.Manifest;
 
 /**
  *
@@ -21,5 +26,4 @@ public class SKClient {
             new Client().setVisible(true);
         });
     }
-    
 }

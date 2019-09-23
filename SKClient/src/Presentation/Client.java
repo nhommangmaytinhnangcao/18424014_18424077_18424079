@@ -5,17 +5,113 @@
  */
 package Presentation;
 
+import java.io.*;
+import java.net.*;
+import java.util.*;
+import javax.swing.*;
+import com.google.gson.*;
+import ValueObjects.*;
+import com.google.gson.reflect.TypeToken;
+
 /**
  *
  * @author Nguy Minh Trong
  */
 public class Client extends javax.swing.JFrame {
 
-    /**
-     * Creates new form Client
-     */
+    Boolean isConnected = false;
+    private static final int Pieces_of_file_size = 1024 * 32;
+    private DatagramSocket clientSocket;
+    public static ArrayList<Node> dsNode = new ArrayList<>();
+    public static ArrayList<FileName> dsfile = new ArrayList<>();
+    DefaultListModel listmodel = new DefaultListModel();
+
     public Client() {
         initComponents();
+    }
+
+    public class checkconnect implements Runnable {
+
+        @Override
+        public void run() {
+            txtthongbao.append("Kết nối thất bại! IP: " + txtIP.getText().trim() + " không đúng \n");
+        }
+    }
+
+    private void getAllFileName() {
+        int i = 1;
+        for (Node n : dsNode) {
+            for (String s : n.getDanhsachFile()) {
+                FileName name = new FileName();
+                name.setSTT(i);
+                name.setPORT(n.getPort());
+                name.setFileServer(n.getTen());
+                name.setFilename(s);
+                dsfile.add(name);
+                i++;
+            }
+        }
+    }
+
+    int chon;
+
+    private void HienThiVaLuaChonDownloadFile() {
+        getAllFileName();
+        System.out.println();
+        boolean kt = true;
+        do {
+            for (FileName name : dsfile) {
+                listmodel.addElement(name.getSTT() + " - " + name.getFilename() + " - Port: (" + name.getPORT() + ")");
+            }
+            lstDanhSachFile.setModel(listmodel);
+            if (chon == 0) {
+                break;
+            }
+        } while (chon != 0);
+    }
+
+    public class serverconnect implements Runnable {
+
+        @Override
+        public void run() {
+            Node node1 = new Node(1, 0, "Client", null);
+            Gson gson = new Gson();
+            String json = gson.toJson(node1);
+            System.out.println(json);
+
+            Socket socket = null;
+            if (isConnected == false) {
+                try {
+                    try {
+                        socket = new Socket(txtIP.getText().trim(), 9999);
+                    } catch (Exception e) {
+                        Thread checkcon = new Thread(new checkconnect());
+                        checkcon.start();
+                        return;
+                    }
+                    txtthongbao.append("Kết nối thành công...\n");
+                    PrintStream pstentruycap = new PrintStream(socket.getOutputStream());
+                    pstentruycap.println(json);
+                    BufferedReader brNode = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                    String requestNode = brNode.readLine();
+                    System.out.println(requestNode);
+                    gson = new Gson();
+                    java.lang.reflect.Type type = new TypeToken<ArrayList<Node>>() {
+                    }.getType();
+                    dsNode = gson.fromJson(requestNode, type);
+                    if (dsNode.size() > 0) {
+                        HienThiVaLuaChonDownloadFile();
+                    } else {
+                        System.out.println("Danh sách file rỗng!");
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                isConnected = true;
+            } else if (isConnected == true) {
+                txtthongbao.append("Bạn đã kết nối rồi.\n");
+            }
+        }
     }
 
     /**
@@ -31,10 +127,13 @@ public class Client extends javax.swing.JFrame {
         lblIP = new javax.swing.JLabel();
         txtIP = new javax.swing.JTextField();
         btnconnet = new javax.swing.JButton();
-        jScrollPane1 = new javax.swing.JScrollPane();
-        lblthongbao = new javax.swing.JList<>();
         jScrollPane2 = new javax.swing.JScrollPane();
-        lblDanhSachFile = new javax.swing.JList<>();
+        lstDanhSachFile = new javax.swing.JList<>();
+        lblport = new javax.swing.JLabel();
+        txtport = new javax.swing.JTextField();
+        jScrollPane3 = new javax.swing.JScrollPane();
+        txtthongbao = new javax.swing.JTextArea();
+        btndownload = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -50,20 +149,33 @@ public class Client extends javax.swing.JFrame {
         btnconnet.setText("Connect");
         btnconnet.setBorder(javax.swing.BorderFactory.createBevelBorder(javax.swing.border.BevelBorder.RAISED));
         btnconnet.setBorderPainted(false);
-
-        lblthongbao.setModel(new javax.swing.AbstractListModel<String>() {
-            String[] strings = { "Item 1", "Item 2", "Item 3", "Item 4", "Item 5" };
-            public int getSize() { return strings.length; }
-            public String getElementAt(int i) { return strings[i]; }
+        btnconnet.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnconnetActionPerformed(evt);
+            }
         });
-        jScrollPane1.setViewportView(lblthongbao);
 
-        lblDanhSachFile.setModel(new javax.swing.AbstractListModel<String>() {
-            String[] strings = { "Item 1", "Item 2", "Item 3", "Item 4", "Item 5" };
-            public int getSize() { return strings.length; }
-            public String getElementAt(int i) { return strings[i]; }
+        lstDanhSachFile.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                lstDanhSachFileMouseClicked(evt);
+            }
         });
-        jScrollPane2.setViewportView(lblDanhSachFile);
+        jScrollPane2.setViewportView(lstDanhSachFile);
+
+        lblport.setFont(new java.awt.Font("Times New Roman", 0, 14)); // NOI18N
+        lblport.setText("PORT:");
+
+        txtthongbao.setColumns(20);
+        txtthongbao.setRows(5);
+        jScrollPane3.setViewportView(txtthongbao);
+
+        btndownload.setFont(new java.awt.Font("Times New Roman", 0, 14)); // NOI18N
+        btndownload.setText("Download file");
+        btndownload.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btndownloadActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -73,47 +185,144 @@ public class Client extends javax.swing.JFrame {
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
-                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 292, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
-                        .addComponent(jScrollPane2))
-                    .addGroup(layout.createSequentialGroup()
                         .addComponent(lblClient, javax.swing.GroupLayout.PREFERRED_SIZE, 149, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(59, 59, 59)
                         .addComponent(lblIP)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addComponent(txtIP, javax.swing.GroupLayout.PREFERRED_SIZE, 175, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 93, Short.MAX_VALUE)
-                        .addComponent(btnconnet, javax.swing.GroupLayout.PREFERRED_SIZE, 120, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addGap(18, 18, 18)
+                        .addComponent(lblport)
+                        .addGap(82, 82, 82)
+                        .addComponent(txtport, javax.swing.GroupLayout.PREFERRED_SIZE, 77, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(btnconnet, javax.swing.GroupLayout.PREFERRED_SIZE, 120, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 292, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(jScrollPane2)))
                 .addContainerGap())
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(btndownload, javax.swing.GroupLayout.PREFERRED_SIZE, 129, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(307, 307, 307))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(lblClient, javax.swing.GroupLayout.PREFERRED_SIZE, 43, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(lblIP)
-                    .addComponent(txtIP, javax.swing.GroupLayout.PREFERRED_SIZE, 43, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(btnconnet, javax.swing.GroupLayout.PREFERRED_SIZE, 47, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(lblClient, javax.swing.GroupLayout.PREFERRED_SIZE, 43, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(lblIP)
+                        .addComponent(txtIP, javax.swing.GroupLayout.PREFERRED_SIZE, 43, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(btnconnet, javax.swing.GroupLayout.PREFERRED_SIZE, 47, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(lblport))
+                    .addComponent(txtport))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 307, Short.MAX_VALUE)
+                    .addComponent(jScrollPane3))
                 .addGap(18, 18, 18)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 294, Short.MAX_VALUE)
-                    .addComponent(jScrollPane2))
-                .addContainerGap())
+                .addComponent(btndownload, javax.swing.GroupLayout.PREFERRED_SIZE, 38, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(49, Short.MAX_VALUE))
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
+    private void btnconnetActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnconnetActionPerformed
+        try {
+            Thread starter = new Thread(new serverconnect());
+            starter.start();
+        } catch (Exception ex) {
+            txtthongbao.append("Kết nối thất bại. Bạn thử lại nhé!. \n");
+        }
+    }//GEN-LAST:event_btnconnetActionPerformed
+
+    private void lstDanhSachFileMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_lstDanhSachFileMouseClicked
+        if (evt.getClickCount() == 1) {
+            if (!lstDanhSachFile.isSelectionEmpty()) {
+                if (SwingUtilities.isLeftMouseButton(evt)) {
+                    String data = (String) listmodel.getElementAt(lstDanhSachFile.getSelectedIndex());
+                    chon = Integer.parseInt(data.substring(0, 2).trim());
+                }
+            }
+        }
+    }//GEN-LAST:event_lstDanhSachFileMouseClicked
+
+    private void btndownloadActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btndownloadActionPerformed
+        if (!lstDanhSachFile.isSelectionEmpty()) {
+            FileName filedownload = new FileName();
+            if (chon == 0) {
+                return;
+            }
+            for (FileName name : dsfile) {
+                if (name.getSTT() == chon) {
+                    filedownload = name;
+                    break;
+                }
+            }
+            txtthongbao.append("\n Đang Dowloard file " + filedownload.getFilename() + "\n");
+            try {
+                ConnectNode(filedownload);
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        }
+    }//GEN-LAST:event_btndownloadActionPerformed
+
+    private void ConnectNode(FileName filechondownload) throws Exception {
+        byte[] sendData = new byte[1024];
+        byte[] receiveData = new byte[1024];
+        byte[] receiveData2 = new byte[Pieces_of_file_size];
+        sendData = filechondownload.getFilename().getBytes();
+        clientSocket = new DatagramSocket();
+        InetAddress IPAddress = InetAddress.getLocalHost();
+        DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, filechondownload.getPORT());
+        clientSocket.send(sendPacket);
+        DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+        clientSocket.receive(receivePacket);
+        String modifiedSentence = new String(receivePacket.getData());
+        Gson gson = new Gson();
+        FileInfo fileinfo = new FileInfo();
+        java.lang.reflect.Type type = new TypeToken<FileInfo>() {
+        }.getType();
+        fileinfo = gson.fromJson(modifiedSentence.trim(), type);
+        if (fileinfo != null) {
+            System.out.println("Tên file: " + fileinfo.getFilename());
+            System.out.println("Kích cỡ file: " + fileinfo.getFilesize());
+            System.out.println("Pieces of file: " + fileinfo.getJoinoffile());
+            System.out.println("Last bytes length: " + fileinfo.getByteLength());
+        } else {
+            System.out.println("tên file rỗng");
+        }
+        File filereceive = new File(fileinfo.getDesDirectory());
+        BufferedOutputStream buout = new BufferedOutputStream(new FileOutputStream(filereceive));
+        for (int i = 0; i < (fileinfo.getJoinoffile() - 1); i++) {
+            receivePacket = new DatagramPacket(receiveData2, receiveData2.length, IPAddress, filechondownload.getPORT());
+            clientSocket.receive(receivePacket);
+            System.out.println("Đang nhận file..." + (i + 1));
+            buout.write(receiveData2, 0, Pieces_of_file_size);
+        }
+        receivePacket = new DatagramPacket(receiveData2, receiveData2.length, IPAddress, filechondownload.getPORT());
+        clientSocket.receive(receivePacket);
+        System.out.println("Hoàn thành");
+        buout.write(receiveData2, 0, fileinfo.getByteLength());
+        buout.flush();
+        txtthongbao.append("Download thành công \n");
+    }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnconnet;
-    private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JButton btndownload;
     private javax.swing.JScrollPane jScrollPane2;
+    private javax.swing.JScrollPane jScrollPane3;
     private javax.swing.JLabel lblClient;
-    private javax.swing.JList<String> lblDanhSachFile;
     private javax.swing.JLabel lblIP;
-    private javax.swing.JList<String> lblthongbao;
+    private javax.swing.JLabel lblport;
+    private javax.swing.JList<String> lstDanhSachFile;
     private javax.swing.JTextField txtIP;
+    private javax.swing.JTextField txtport;
+    private javax.swing.JTextArea txtthongbao;
     // End of variables declaration//GEN-END:variables
 }

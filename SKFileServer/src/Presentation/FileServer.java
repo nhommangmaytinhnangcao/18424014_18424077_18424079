@@ -50,8 +50,6 @@ public class FileServer extends javax.swing.JFrame {
         lblPort.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         lblPort.setText("PORT:");
 
-        jTextField1.setText("jTextField1");
-
         btnConnect.setFont(new java.awt.Font("Times New Roman", 1, 18)); // NOI18N
         btnConnect.setText("Connect");
         btnConnect.setBorder(javax.swing.BorderFactory.createBevelBorder(javax.swing.border.BevelBorder.RAISED));
