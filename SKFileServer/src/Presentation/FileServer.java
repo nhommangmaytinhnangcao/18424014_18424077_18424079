@@ -5,6 +5,26 @@
  */
 package Presentation;
 
+import java.io.BufferedInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectOutputStream;
+import java.io.PrintStream;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.Socket;
+import java.net.SocketException;
+import java.util.ArrayList;
+import javax.swing.DefaultListModel;
+import javax.swing.JOptionPane;
+import skfileserver.FileInfo;
+import skfileserver.Node;
+import com.google.gson.Gson;
+
 /**
  *
  * @author Nguy Minh Trong
@@ -29,12 +49,16 @@ public class FileServer extends javax.swing.JFrame {
 
         lblFileServer = new javax.swing.JLabel();
         lblIP = new javax.swing.JLabel();
-        txtIP = new javax.swing.JTextField();
+        txtIp = new javax.swing.JTextField();
         lblPort = new javax.swing.JLabel();
-        jTextField1 = new javax.swing.JTextField();
+        txtPort = new javax.swing.JTextField();
         btnConnect = new javax.swing.JButton();
         pnDongThoiGian = new javax.swing.JPanel();
+        jScrollPane1 = new javax.swing.JScrollPane();
+        txt = new javax.swing.JTextArea();
         pnDanhSachFile = new javax.swing.JPanel();
+        jScrollPane2 = new javax.swing.JScrollPane();
+        jlist = new javax.swing.JList();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -54,31 +78,55 @@ public class FileServer extends javax.swing.JFrame {
         btnConnect.setText("Connect");
         btnConnect.setBorder(javax.swing.BorderFactory.createBevelBorder(javax.swing.border.BevelBorder.RAISED));
         btnConnect.setBorderPainted(false);
+        btnConnect.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnConnectActionPerformed(evt);
+            }
+        });
 
         pnDongThoiGian.setBorder(javax.swing.BorderFactory.createTitledBorder(javax.swing.BorderFactory.createTitledBorder("Dòng thời gian")));
+
+        txt.setEditable(false);
+        txt.setColumns(20);
+        txt.setRows(5);
+        jScrollPane1.setViewportView(txt);
 
         javax.swing.GroupLayout pnDongThoiGianLayout = new javax.swing.GroupLayout(pnDongThoiGian);
         pnDongThoiGian.setLayout(pnDongThoiGianLayout);
         pnDongThoiGianLayout.setHorizontalGroup(
             pnDongThoiGianLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 392, Short.MAX_VALUE)
+            .addGroup(pnDongThoiGianLayout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 358, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(22, Short.MAX_VALUE))
         );
         pnDongThoiGianLayout.setVerticalGroup(
             pnDongThoiGianLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 278, Short.MAX_VALUE)
+            .addGroup(pnDongThoiGianLayout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jScrollPane1)
+                .addContainerGap())
         );
 
         pnDanhSachFile.setBorder(javax.swing.BorderFactory.createTitledBorder(javax.swing.BorderFactory.createTitledBorder("Danh Sách File")));
+
+        jScrollPane2.setViewportView(jlist);
 
         javax.swing.GroupLayout pnDanhSachFileLayout = new javax.swing.GroupLayout(pnDanhSachFile);
         pnDanhSachFile.setLayout(pnDanhSachFileLayout);
         pnDanhSachFileLayout.setHorizontalGroup(
             pnDanhSachFileLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 0, Short.MAX_VALUE)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, pnDanhSachFileLayout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jScrollPane2)
+                .addContainerGap())
         );
         pnDanhSachFileLayout.setVerticalGroup(
             pnDanhSachFileLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 0, Short.MAX_VALUE)
+            .addGroup(pnDanhSachFileLayout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 252, Short.MAX_VALUE)
+                .addContainerGap())
         );
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -97,11 +145,11 @@ public class FileServer extends javax.swing.JFrame {
                         .addGap(18, 18, 18)
                         .addComponent(lblIP, javax.swing.GroupLayout.PREFERRED_SIZE, 43, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(txtIP, javax.swing.GroupLayout.PREFERRED_SIZE, 184, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(txtIp, javax.swing.GroupLayout.PREFERRED_SIZE, 184, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(28, 28, 28)
                         .addComponent(lblPort, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, 184, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(txtPort, javax.swing.GroupLayout.PREFERRED_SIZE, 184, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(60, 60, 60)
                         .addComponent(btnConnect, javax.swing.GroupLayout.DEFAULT_SIZE, 137, Short.MAX_VALUE)))
                 .addContainerGap())
@@ -113,9 +161,9 @@ public class FileServer extends javax.swing.JFrame {
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(lblFileServer, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(lblIP, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(txtIP, javax.swing.GroupLayout.PREFERRED_SIZE, 32, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(txtIp, javax.swing.GroupLayout.PREFERRED_SIZE, 32, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(lblPort)
-                    .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(txtPort, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(btnConnect, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -127,15 +175,263 @@ public class FileServer extends javax.swing.JFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
+    Boolean isConnected = false;// mặc định là chưa kết nối(th cho nut button connect
+    boolean Flag = false;// mặc định là kết nối chưa thành công. (cho th nếu IP không đúng với server)
+    DefaultListModel listModel = new DefaultListModel();
+
+    // Phần xử lý file
+    public static final int PIECES_OF_FILE_SIZE = 1024 * 32;// khởi dung lượng (32KB) mỗi lần nhận 
+    public DatagramSocket UDPSocket;
+    public static FileInfo fileInfo;
+    public int count;
+    public byte[][] fileBytess;
+
+    public class checkconnect implements Runnable {// không dùng hàm này lúc chạy lên jframe không chịu load liền
+
+        @Override
+        public void run() {
+            txt.append("kết nối thất bại! IP " + txtIp.getText().trim() + " Không đúng \n");
+        }
+    }
+
+    public ArrayList<String> GetlistfileName(String dir) {
+        ArrayList<String> ds = new ArrayList<>();
+        File folder = new File(dir);
+        File[] listOfFiles = folder.listFiles();
+        for (int i = 0; i < listOfFiles.length; i++) {
+            if (listOfFiles[i].isFile()) {
+                ds.add(listOfFiles[i].getName());
+                listModel.addElement(listOfFiles[i].getName());
+            } else if (listOfFiles[i].isDirectory()) {
+                System.out.println("Directory " + listOfFiles[i].getName());
+            }
+        }
+        jlist.setModel(listModel);
+        return ds;
+    }
+
+    //Xử lý gửi thông tin file và nội dung file
+    public String sendFile(String sourcePath, String destinationDir) throws Exception {
+        File fileSend = new File(sourcePath);
+        InputStream inputStream = new FileInputStream(fileSend);
+        BufferedInputStream bis = new BufferedInputStream(inputStream);
+        // inetAddress = InetAddress.getByName(serverHost);
+        byte[] bytePart = new byte[PIECES_OF_FILE_SIZE];
+
+        // get file size
+        long fileLength = fileSend.length();
+        System.out.println(fileLength);
+        int piecesOfFile = (int) (fileLength / PIECES_OF_FILE_SIZE);
+        int lastByteLength = (int) (fileLength % PIECES_OF_FILE_SIZE);
+
+        // check last bytes of file
+        if (lastByteLength > 0) {
+            piecesOfFile++;
+        }
+
+        // split file into pieces and assign to fileBytess
+        fileBytess = new byte[piecesOfFile][PIECES_OF_FILE_SIZE];
+        count = 0;
+        while (bis.read(bytePart, 0, PIECES_OF_FILE_SIZE) > 0) {
+            fileBytess[count++] = bytePart;
+            bytePart = new byte[PIECES_OF_FILE_SIZE];
+        }
+
+        // read file info
+        fileInfo = new FileInfo();
+        fileInfo.setFilename(fileSend.getName());
+        fileInfo.setFileSize(fileSend.length());
+        fileInfo.setPiecesOfFile(piecesOfFile);
+        fileInfo.setLastByteLength(lastByteLength);
+        fileInfo.setDestinationDirectory(destinationDir);
+
+        Gson gson = new Gson();
+        String json = gson.toJson(fileInfo);// chuyển đối tượng thành json
+        return json;
+    }
+
+    public void waitMillisecond(long millisecond) {
+        try {
+            Thread.sleep(millisecond);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // mở kết nối cho client truy cập
+    public class MoKetNoiToiClient implements Runnable {
+
+        @Override
+        public void run() {
+            int serverPort = Integer.parseInt(txtPort.getText().trim());
+            try {
+                UDPSocket = new DatagramSocket(serverPort);
+            } catch (SocketException ex) {
+                System.out.println("lỗi 1 ");
+            }
+            while (true) {
+                // --------KHAI BÁO
+                DatagramPacket sendPacket;//tạo DatagramPacket để nhận và gửi gói tin
+                byte[] receiveData = new byte[1024];
+
+                // --------NHẬN GÓI TIN TỪ CLIENT  
+                DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+                try {
+                    UDPSocket.receive(receivePacket);
+                } catch (IOException ex) {
+                    System.out.println("lỗi 2 ");
+                }
+                String file_of_client_send = new String(receivePacket.getData());
+                txt.append("\nClient muốn dowload file " + file_of_client_send + "\n");
+                ///
+
+                //==========GỬI GÓI TIN ĐI
+                // đọc thông tin client từ gói client đã gửi tới
+                InetAddress IPAddress = receivePacket.getAddress();// thiết lập địa chỉ
+                int clientPort = receivePacket.getPort();
+                byte[] sendData = new byte[1024]; // thiết lập mảng byte để ghi dữ liệu
+
+                String sourcePath = "src\\data\\" + file_of_client_send.trim();
+                String destinationDir = "src\\dowload\\" + file_of_client_send.trim();// nơi lưu file
+                String fileInfor = null;
+                try {
+                    fileInfor = sendFile(sourcePath, destinationDir);// lưu chuỗi json vào string
+                } catch (Exception ex) {
+                    System.out.println("lỗi 3 ");
+                }
+                // tiến hành gửi
+                sendData = fileInfor.getBytes();
+                DatagramPacket sendPacketdata = new DatagramPacket(sendData, sendData.length, IPAddress, clientPort);
+                try {
+                    UDPSocket.send(sendPacketdata);// gửi gói tin đó đi
+                } catch (IOException ex) {
+                    System.out.println("lỗi 4 ");
+                }
+                /////////
+
+                // send file info
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                ObjectOutputStream oos = null;
+                try {
+                    oos = new ObjectOutputStream(baos);
+                } catch (IOException ex) {
+                    System.out.println("lỗi 5 ");
+                }
+                try {
+                    oos.writeObject(fileInfo);
+                } catch (IOException ex) {
+                    System.out.println("lỗi 6 ");
+                }
+                sendPacket = new DatagramPacket(baos.toByteArray(), baos.toByteArray().length, IPAddress, clientPort);
+                try {
+                    UDPSocket.send(sendPacket);
+                } catch (IOException ex) {
+                    System.out.println("lỗi 7 ");
+                }
+
+                // send file content
+                txt.append("đã gửi file " + file_of_client_send + "\n\n");
+                // send pieces of file
+                for (int i = 0; i < (count - 1); i++) {
+                    sendPacket = new DatagramPacket(fileBytess[i], PIECES_OF_FILE_SIZE, IPAddress, clientPort);
+                    try {
+                        UDPSocket.send(sendPacket);
+                    } catch (IOException ex) {
+                        System.out.println("lỗi 8 ");
+                    }
+                    waitMillisecond(40);
+                }
+                // send last bytes of file
+                sendPacket = new DatagramPacket(fileBytess[count - 1], PIECES_OF_FILE_SIZE,
+                        IPAddress, clientPort);
+                try {
+                    UDPSocket.send(sendPacket);
+                } catch (IOException ex) {
+                    System.out.println("lỗi 9 ");
+                }
+                waitMillisecond(40);
+                System.out.println("Sent.");
+            }
+        }
+    }
+
+    public class Serverconnect implements Runnable {
+
+        @Override
+        public void run() {
+
+            if (isConnected == false) {
+
+                if (txtPort.getText().equals("")) {
+                    JOptionPane.showMessageDialog(null, "bạn chưa nhập port");
+                    return;
+                }
+                if (txtPort.getText().equals("")) {// 
+                    JOptionPane.showMessageDialog(null, "bạn chưa nhập IP");
+                    return;
+                }
+
+                try {
+                    Socket socket;
+                    try {
+                        socket = new Socket(txtIp.getText().trim(), 9999);// tạo kết nối
+                    } catch (Exception e) {
+                        Thread checkcon = new Thread(new checkconnect());
+                        checkcon.start();
+                        return;
+                    }
+                    txt.append("kết nối thành công ...\n");
+                    Flag = true;
+                    ArrayList<String> ds = new ArrayList<>();// chứa danh sách tên file
+                    ds = GetlistfileName("src\\data");// đọc file
+                    int port = Integer.parseInt(txtPort.getText().trim());// lấy value từ ô input
+                    Node node1 = new Node(0, port, "Node1", ds);
+                    Gson gson = new Gson();
+                    String json = gson.toJson(node1); // chuyển đối tượng sang chuỗi json 
+                    try {
+                        Thread toclient = new Thread(new MoKetNoiToiClient());// gọi lại lớp kết nối
+                        toclient.start();
+                    } catch (Exception e) {
+                        txt.append("không mở được kết nối đến client ...\n");
+                    }
+                    PrintStream pstentruycap = new PrintStream(socket.getOutputStream());
+                    pstentruycap.println(json);// gửi chuỗi json đó đi cho server
+                    isConnected = true;// nếu là true thì đã kết nối(xử lý cho cái nút bấm)
+
+                } catch (Exception ex) {
+                    // TODO Auto-generated catch block
+                    txt.append("kết nối thất bại. bạn thử lại nha!. \n");
+                }
+            } else if (isConnected == true) {
+                txt.append("bạn đã kết nối rồi. \n");
+            }
+        }
+    }
+
+    private void btnConnectActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnConnectActionPerformed
+        // TODO add your handling code here:
+        try {
+            Thread starter = new Thread(new Serverconnect());// gọi lại lớp kết nối
+            starter.start();// chạy lên
+        } catch (Exception ex) {
+            txt.append("kết nối thất bại. bạn thử lại nha!. \n");
+
+        }
+    }//GEN-LAST:event_btnConnectActionPerformed
+
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnConnect;
-    private javax.swing.JTextField jTextField1;
+    private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JScrollPane jScrollPane2;
+    private javax.swing.JList jlist;
     private javax.swing.JLabel lblFileServer;
     private javax.swing.JLabel lblIP;
     private javax.swing.JLabel lblPort;
     private javax.swing.JPanel pnDanhSachFile;
     private javax.swing.JPanel pnDongThoiGian;
-    private javax.swing.JTextField txtIP;
+    private javax.swing.JTextArea txt;
+    private javax.swing.JTextField txtIp;
+    private javax.swing.JTextField txtPort;
     // End of variables declaration//GEN-END:variables
 }
